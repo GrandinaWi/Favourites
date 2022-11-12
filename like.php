@@ -18,15 +18,15 @@ class LikesBitrix{
     public function __construct($id,$userid) {
         $this->id = $id;
         $this->userid = $userid;
+        $this->hlbl = 1;;
+        $this->hlblock = HL\HighloadBlockTable::getById($this->hlbl)->fetch();
+        $this->entity=HL\HighloadBlockTable::compileEntity($this->hlblock);
+        $this->entity_data_class = $this->entity->getDataClass();
+
     }
     function countLikesBitrix(){
-        $hlbl = 1; // Указываем ID нашего highloadblock блока к которому будет делать запросы.
-        $hlblock = HL\HighloadBlockTable::getById($hlbl)->fetch();
-
-        $entity = HL\HighloadBlockTable::compileEntity($hlblock);
-        $entity_data_class = $entity->getDataClass();
-
-        $rsData = $entity_data_class::getList(array( //делаю выборку записи по параметрам айди товара и айди юзера
+        $datas=$this->entity_data_class;
+        $rsData = $datas::getList(array( //делаю выборку записи по параметрам айди товара и айди юзера
             "select" => array("*"),
             "order" => array("ID" => "ASC"),
             "filter" => array("UF_USERID"=>$this->userid)
@@ -38,18 +38,12 @@ class LikesBitrix{
         return $count;
     }
     function getProductBitrix(){
-        $hlbl = 1; // Указываем ID нашего highloadblock блока к которому будет делать запросы.
-        $hlblock = HL\HighloadBlockTable::getById($hlbl)->fetch();
-
-        $entity = HL\HighloadBlockTable::compileEntity($hlblock);
-        $entity_data_class = $entity->getDataClass();
-
-        $rsData = $entity_data_class::getList(array( //делаю выборку записи по параметрам айди товара и айди юзера
+        $datas=$this->entity_data_class;
+        $rsData = $datas::getList(array( //делаю выборку записи по параметрам айди товара и айди юзера
             "select" => array("*"),
             "order" => array("ID" => "ASC"),
             "filter" => array("UF_USERID"=>$this->userid)
         ));
-        $product=array();
         while($arData = $rsData->Fetch()){
             $product[]=$arData['UF_PRODUCTID'];
         }
@@ -57,48 +51,35 @@ class LikesBitrix{
     }
 
     function addRemoveLikeBitrix(){
-        $hlbl = 1; // Указываем ID нашего highloadblock блока к которому будет делать запросы.
-        $hlblock = HL\HighloadBlockTable::getById($hlbl)->fetch();
-
-        $entity = HL\HighloadBlockTable::compileEntity($hlblock);
-        $entity_data_class = $entity->getDataClass();
-
-        $rsData = $entity_data_class::getList(array( //делаю выборку записи по параметрам айди товара и айди юзера
+        $datas=$this->entity_data_class;
+        $rsData = $datas::getList(array( //выборку записи по параметрам айди товара и айди юзера
             "select" => array("*"),
             "order" => array("ID" => "ASC"),
             "filter" => array("UF_PRODUCTID"=>$this->id,"UF_USERID"=>$this->userid)
         ));
-        $mass=array();
         while($arData = $rsData->Fetch()){
             $mass[]=$arData;
         }
-
         if (empty($mass)){ // если массив пустой, значит добавляем в избранное
             $data = array(
                 "UF_PRODUCTID"=>$this->id,
                 "UF_USERID"=>$this->userid
             );
-            $result = $entity_data_class::add($data);
+            $datas::add($data);
         }else{ // если существуют , то удаляем из избранного
-            $entity_data_class::Delete($mass[0]['ID']);
+            $datas::Delete($mass[0]['ID']);
 
         }
     }
     function clearLikeBitrix(){
-        $hlbl = 1; // Указываем ID нашего highloadblock блока к которому будет делать запросы.
-        $hlblock = HL\HighloadBlockTable::getById($hlbl)->fetch();
-
-        $entity = HL\HighloadBlockTable::compileEntity($hlblock);
-        $entity_data_class = $entity->getDataClass();
-
-        $rsData = $entity_data_class::getList(array( //делаю выборку записи по параметрам айди товара и айди юзера
+        $datas=$this->entity_data_class;
+        $rsData = $datas::getList(array( //елаю выборку записи по параметрам айди товара и айди юзера
             "select" => array("*"),
             "order" => array("ID" => "ASC"),
             "filter" => array("UF_USERID"=>$this->userid)
         ));
-
         while($arData = $rsData->Fetch()){
-            $entity_data_class::Delete($arData['ID']);
+            $datas::Delete($arData['ID']);
         }
     }
 }
@@ -107,12 +88,9 @@ class Likes{
     public function __construct($id) {
         $this->id = $id;
     }
-    // добавление/удаление из избранного
     function addRemoveLike()
     {
-
         session_start(); // старт сессии
-
         if (isset($_SESSION['likes'])) { //существует ли сессия
             if (empty($_SESSION['likes'])) { //не пуста ли сессия
                 $_SESSION['likes'][$this->id ] = $this->id ; //если пусто добавляем айди
@@ -132,10 +110,9 @@ class Likes{
         return $_SESSION['likes']; // возвращаем сессию
 
     }
-    // очищаем сессию
     function clearLikes(){
         session_start();
-        unset($_SESSION['likes']);
+        unset($_SESSION['likes']); // или $_SESSION = array() для очистки всех данных сессии
         session_destroy();
     }
 //считаем количество избранного
